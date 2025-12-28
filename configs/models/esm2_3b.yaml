@@ -1,0 +1,11 @@
+# ESM-2 3B Configuration
+# Largest ESM-2 model - best quality, requires A100/H100
+
+model:
+  model_type: "esm2"
+  model_name: "facebook/esm2_t36_3B_UR50D"
+  layer_ids: [18]  # Middle layer of 36-layer model
+  batch_size: 4  # Small batch for 3B model
+  dtype: "float16"  # Must use float16 for memory
+  device: "cuda"
+

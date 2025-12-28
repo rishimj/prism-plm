@@ -1,0 +1,10 @@
+# Swiss-Prot Dataset Configuration
+# Manually curated protein sequences
+
+dataset:
+  source: "huggingface"
+  hf_dataset_name: "lhallee/SwissProt"
+  hf_split: "train"
+  sequence_column: "sequence"
+  id_column: "accession"
+

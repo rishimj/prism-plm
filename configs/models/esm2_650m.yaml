@@ -1,0 +1,10 @@
+# ESM-2 650M Configuration
+# Good balance of performance and resource usage
+
+model:
+  model_type: "esm2"
+  model_name: "facebook/esm2_t33_650M_UR50D"
+  layer_ids: [16, 17]  # Good middle layers for 33-layer model
+  batch_size: 16
+  dtype: "float16"
+

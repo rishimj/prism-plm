@@ -1,0 +1,40 @@
+# Core dependencies
+torch>=2.0.0
+transformers>=4.40.0
+datasets>=2.17.0
+
+# ESM-2 protein language model
+fair-esm>=2.0.0
+
+# Configuration
+pydantic>=2.0.0
+pyyaml>=6.0.0
+
+# Biology tools
+biopython>=1.83
+goatools>=1.4.0
+
+# Machine learning / Analysis
+scikit-learn>=1.4.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Embeddings and clustering
+sentence-transformers>=3.0.0
+umap-learn>=0.5.0
+hdbscan>=0.8.33
+
+# Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.18.0
+
+# Testing
+pytest>=8.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.12.0
+
+# Development
+black>=24.0.0
+ruff>=0.1.0
+

@@ -1,0 +1,10 @@
+# UniRef50 Dataset Configuration
+# Clustered at 50% sequence identity
+
+dataset:
+  source: "huggingface"
+  hf_dataset_name: "PolyAI/uniref50"
+  hf_split: "train"
+  sequence_column: "sequence"
+  id_column: "id"
+

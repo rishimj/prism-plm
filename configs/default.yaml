@@ -1,0 +1,102 @@
+# Default PRISM-Bio Configuration
+# This file contains all default settings for protein mechanistic interpretability
+
+experiment_name: "default"
+output_dir: "outputs"
+log_level: "INFO"
+random_seed: 42
+verbose: true
+num_workers: 4
+use_gpu: true
+
+# Dataset Configuration
+dataset:
+  source: "huggingface"
+  hf_dataset_name: "PolyAI/uniref50"
+  hf_subset: null
+  hf_split: "train"
+  streaming: true
+  max_samples: 1000
+  min_sequence_length: 50
+  max_sequence_length: 1024
+  filter_invalid: true
+  ambiguous_handling: "keep"
+  use_cache: true
+
+# Model Configuration
+model:
+  model_type: "esm2"
+  model_name: "facebook/esm2_t36_3B_UR50D"
+  hook_type: "all"
+  layer_ids: [18]
+  unit_ids: null  # null = all units
+  batch_size: 8
+  device: "cuda"
+  dtype: "float16"
+  aggregation: "mean"
+
+# Clustering Configuration
+clustering:
+  algorithm: "kmeans"
+  n_clusters: 5
+  random_seed: 42
+  kmeans_n_init: 10
+  kmeans_max_iter: 300
+  hdbscan_min_cluster_size: 5
+  hdbscan_min_samples: null
+  spectral_affinity: "rbf"
+  spectral_n_neighbors: 10
+  agglomerative_linkage: "ward"
+
+# Visualization Configuration
+visualization:
+  reduction_method: "umap"
+  umap_n_neighbors: 15
+  umap_min_dist: 0.1
+  umap_metric: "euclidean"
+  umap_random_state: 42
+  tsne_perplexity: 30.0
+  tsne_learning_rate: "auto"
+  tsne_n_iter: 1000
+  figure_width: 14
+  figure_height: 10
+  dpi: 300
+  colormap: "tab10"
+  point_size: 50
+  alpha: 0.6
+  output_dir: "visualizations"
+  save_formats: ["png"]
+
+# Sampling Configuration
+sampling:
+  start_percentile: 0.99
+  end_percentile: 1.0
+  n_samples: 1000
+  activation_percentile: 90
+  filter_positive_activations: true
+  max_cluster_size: 20
+
+# GO Enrichment Configuration
+go_enrichment:
+  enabled: true
+  obo_file: null  # Auto-download if null
+  annotation_file: null
+  p_value_threshold: 0.05
+  correction_method: "fdr_bh"
+  min_genes: 3
+  namespaces:
+    - "biological_process"
+    - "molecular_function"
+    - "cellular_component"
+
+# Text Generation Configuration
+text_generation:
+  generator_model: "meta-llama/Llama-3.1-8B-Instruct"
+  use_api: false
+  api_provider: null
+  max_new_tokens: 512
+  temperature: 0.7
+  top_p: 0.95
+  do_sample: true
+  system_instruction: "assistant"
+

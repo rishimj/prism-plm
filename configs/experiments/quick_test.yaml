@@ -1,0 +1,35 @@
+# Quick Test Configuration
+# Use this for fast testing and development
+# Uses smallest ESM-2 model and minimal samples
+
+experiment_name: "quick_test"
+verbose: true
+
+dataset:
+  max_samples: 100
+  min_sequence_length: 20
+  streaming: true
+
+model:
+  # Use smallest ESM-2 for fast testing (8M params, 6 layers)
+  model_name: "facebook/esm2_t6_8M_UR50D"
+  batch_size: 16
+  layer_ids: [3]  # Middle layer of 6-layer model
+  dtype: "float32"  # More compatible for testing
+
+clustering:
+  n_clusters: 3
+  kmeans_n_init: 3
+  kmeans_max_iter: 100
+
+visualization:
+  reduction_method: "pca"  # Fastest method
+  dpi: 150  # Lower DPI for faster saving
+
+sampling:
+  n_samples: 100
+  max_cluster_size: 10
+
+go_enrichment:
+  enabled: false  # Disable for quick tests
+

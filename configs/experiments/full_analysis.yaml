@@ -1,0 +1,51 @@
+# Full Analysis Configuration
+# Production configuration for comprehensive analysis
+# Uses ESM-2 3B model with thorough sampling
+
+experiment_name: "full_analysis"
+log_level: "INFO"
+verbose: true
+
+dataset:
+  source: "huggingface"
+  hf_dataset_name: "PolyAI/uniref50"
+  streaming: true
+  max_samples: 10000
+  min_sequence_length: 50
+  max_sequence_length: 1024
+  filter_invalid: true
+
+model:
+  model_type: "esm2"
+  model_name: "facebook/esm2_t36_3B_UR50D"
+  hook_type: "all"
+  layer_ids: [12, 18, 24, 30]  # Multiple layers for comparison
+  batch_size: 4  # Smaller batch for 3B model
+  dtype: "float16"
+  aggregation: "mean"
+
+clustering:
+  algorithm: "kmeans"
+  n_clusters: 10
+  kmeans_n_init: 20
+  kmeans_max_iter: 500
+
+visualization:
+  reduction_method: "umap"
+  umap_n_neighbors: 30
+  umap_min_dist: 0.05
+  dpi: 300
+  save_formats: ["png", "pdf"]
+
+sampling:
+  start_percentile: 0.95
+  end_percentile: 1.0
+  n_samples: 5000
+  max_cluster_size: 50
+
+go_enrichment:
+  enabled: true
+  p_value_threshold: 0.01
+  correction_method: "fdr_bh"
+  min_genes: 5
+
