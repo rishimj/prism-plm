@@ -166,6 +166,8 @@ def main():
                 hf_split=config.dataset.hf_split,
                 streaming=config.dataset.streaming,
                 max_samples=config.dataset.max_samples,
+                sequence_column=config.dataset.sequence_column,
+                id_column=config.dataset.id_column,
             )
             sequences = list(loader.load())
         else:
@@ -190,10 +192,21 @@ def main():
         device = helpers.get_device(config.model.device)
         logger.info(f"Using device: {device}")
 
-        tokenizer = AutoTokenizer.from_pretrained(config.model.model_name)
+        # Get token if available (for gated/private models)
+        hf_token = helpers.get_huggingface_token()
+        if hf_token:
+            logger.debug(f"HuggingFace token found - will use for model download")
+        else:
+            logger.debug(f"No HuggingFace token set - using public access")
+
+        tokenizer = AutoTokenizer.from_pretrained(
+            config.model.model_name,
+            token=hf_token,  # Pass token explicitly (None is fine for public models)
+        )
         model = AutoModel.from_pretrained(
             config.model.model_name,
             torch_dtype=torch.float16 if config.model.dtype == "float16" else torch.float32,
+            token=hf_token,  # Pass token explicitly (None is fine for public models)
         )
         model = model.to(device)
         model.eval()
@@ -258,17 +271,41 @@ def main():
 
                     all_embeddings.append(embeddings.cpu().numpy())
 
-                # Store metadata
-                for seq_id in batch["sequence_id"]:
-                    all_metadata.append({"id": seq_id})
+                # Store metadata with sequence info
+                for i, seq_id in enumerate(batch["sequence_id"]):
+                    # Find the original sequence data
+                    seq_data = next((s for s in sequences if s.get("id") == seq_id), None)
+                    if seq_data:
+                        all_metadata.append({
+                            "id": seq_id,
+                            "sequence": seq_data.get("sequence", ""),
+                        })
+                    else:
+                        all_metadata.append({"id": seq_id})
 
-                # Clear GPU cache periodically
-                if batch_idx % 10 == 0:
+                # Clear GPU cache more frequently to prevent OOM
+                if batch_idx % 5 == 0:
                     helpers.clear_gpu_cache(device)
 
         import numpy as np
+        
+        # Check if we have any embeddings
+        if len(all_embeddings) == 0:
+            raise ValueError(
+                "No embeddings were extracted. This usually means:\n"
+                "1. No sequences passed filtering (check sequence_column and id_column match dataset)\n"
+                "2. All sequences were filtered out (check min/max_sequence_length)\n"
+                "3. Dataset is empty or not loading correctly"
+            )
+        
         all_embeddings = np.vstack(all_embeddings)
         logger.info(f"Extracted embeddings: {all_embeddings.shape}")
+
+        # Check for and handle inf/nan values in embeddings
+        if np.any(~np.isfinite(all_embeddings)):
+            n_invalid = np.sum(~np.isfinite(all_embeddings))
+            logger.warning(f"Found {n_invalid} inf/nan values in embeddings. Replacing with 0.")
+            all_embeddings = np.nan_to_num(all_embeddings, nan=0.0, posinf=0.0, neginf=0.0)
 
         # Step 4: Clustering
         logger.info("")
@@ -276,7 +313,7 @@ def main():
         logger.info("STEP 4: CLUSTERING")
         logger.info("=" * 80)
 
-        from src.analysis.clustering import cluster_embeddings, compute_cluster_statistics
+        from src.analysis.clustering import cluster_embeddings, compute_cluster_statistics, compute_cluster_similarity
 
         labels = cluster_embeddings(
             all_embeddings,
@@ -287,6 +324,32 @@ def main():
 
         stats = compute_cluster_statistics(all_embeddings, labels)
         logger.info(f"Clustering complete. Found {len(stats)} clusters.")
+
+        # Compute inter-cluster similarity for polysemanticity analysis
+        similarity_results = compute_cluster_similarity(stats)
+        logger.info(f"Inter-cluster similarity: overall avg = {similarity_results['overall_avg']:.4f}")
+
+        # Get ALL sequences for each cluster (not just representatives)
+        import numpy as np
+        all_cluster_sequences = {}
+        unique_labels = np.unique(labels)
+        
+        for label in unique_labels:
+            if label == -1:  # Skip noise points
+                continue
+            mask = labels == label
+            indices = np.where(mask)[0]
+            # Get all metadata for this cluster
+            all_cluster_sequences[label] = [all_metadata[i] for i in indices]
+            logger.info(f"Cluster {label}: {len(all_cluster_sequences[label])} sequences")
+            
+            # Log all sequences in this cluster
+            logger.info(f"\n--- Cluster {label} Sequences ({len(all_cluster_sequences[label])} total) ---")
+            for i, seq_data in enumerate(all_cluster_sequences[label], 1):
+                seq_id = seq_data.get("id", f"seq_{i}")
+                sequence = seq_data.get("sequence", "")
+                logger.info(f"  {i}. {seq_id}: {sequence}")
+            logger.info("")
 
         # Step 5: Visualization
         logger.info("")
@@ -309,21 +372,90 @@ def main():
             experiment_name=config.experiment_name,
         )
 
+        # Step 5.5: GO Enrichment Analysis (if enabled)
+        go_enrichment_results = {}
+        if config.go_enrichment.enabled:
+            logger.info("")
+            logger.info("=" * 80)
+            logger.info("STEP 5.5: GO ENRICHMENT ANALYSIS")
+            logger.info("=" * 80)
+
+            from src.analysis.go_enrichment import run_cluster_go_enrichment
+
+            # Build cluster sequences dict with full sequence data for GO extraction
+            cluster_sequences_for_go = {}
+            for label in unique_labels:
+                if label == -1:
+                    continue
+                mask = labels == label
+                indices = np.where(mask)[0]
+                # Get full sequence data (with GO annotations) for this cluster
+                cluster_sequences_for_go[label] = []
+                for idx in indices:
+                    seq_id = all_metadata[idx].get("id", "")
+                    # Find full sequence data from original sequences
+                    seq_data = next((s for s in sequences if s.get("id") == seq_id), None)
+                    if seq_data:
+                        cluster_sequences_for_go[label].append(seq_data)
+                    else:
+                        cluster_sequences_for_go[label].append(all_metadata[idx])
+
+            try:
+                go_enrichment_results = run_cluster_go_enrichment(
+                    cluster_sequences=cluster_sequences_for_go,
+                    all_sequences=sequences,
+                    config=config,
+                    experiment_name=config.experiment_name,
+                    output_dir=Path(config.output_dir) / "results",
+                )
+                logger.info(f"GO enrichment completed for {len(go_enrichment_results)} clusters")
+            except Exception as e:
+                logger.error(f"GO enrichment failed: {e}")
+                logger.warning("Continuing without GO enrichment results")
+                go_enrichment_results = {}
+        else:
+            logger.info("")
+            logger.info("GO enrichment is disabled in config. Skipping Step 5.5.")
+
         # Step 6: Save results
         logger.info("")
         logger.info("=" * 80)
         logger.info("STEP 6: SAVING RESULTS")
         logger.info("=" * 80)
 
-        # Create descriptions (placeholder - would use LLM in full implementation)
+        # Save ALL sequences to a separate file
+        from src.utils.output import save_representative_sequences
+        seq_filepath = save_representative_sequences(
+            all_cluster_sequences,
+            experiment_name=config.experiment_name,
+            output_dir=Path(config.output_dir) / "visualizations",
+        )
+        logger.info(f"Saved all sequences to: {seq_filepath}")
+
+        # Create descriptions with sequence IDs in highlights
+        # Use GO-based descriptions if enrichment was performed
         descriptions = []
         for cluster_id in sorted(stats.keys()):
+            # Get ALL sequence IDs for this cluster
+            cluster_sequences = all_cluster_sequences.get(cluster_id, [])
+            sequence_ids = [seq.get("id", "") for seq in cluster_sequences]  # All sequences
+
+            # Use GO-based description if available, otherwise fallback to default
+            if cluster_id in go_enrichment_results and go_enrichment_results[cluster_id].get("description"):
+                description = go_enrichment_results[cluster_id]["description"]
+            else:
+                description = f"Cluster {cluster_id} with {stats[cluster_id]['size']} samples"
+
+            # Get cluster similarity (avg similarity to other clusters)
+            cluster_similarity = similarity_results["per_cluster_avg"].get(cluster_id, 1.0)
+
             descriptions.append({
                 "layer": config.model.layer_ids[0],
                 "unit": cluster_id,
-                "description": f"Cluster {cluster_id} with {stats[cluster_id]['size']} samples",
+                "description": description,
                 "mean_activation": stats[cluster_id]["mean_distance"],
-                "highlights": [],
+                "highlights": sequence_ids,  # Store sequence IDs instead of empty list
+                "cluster_similarity": cluster_similarity,  # Avg cosine similarity to other clusters
             })
 
         output_path = save_description_csv(
@@ -336,6 +468,57 @@ def main():
         )
 
         logger.info(f"Saved descriptions to: {output_path}")
+
+        # Save the full similarity matrix to a JSON file
+        import json
+        from datetime import datetime
+        import numpy as np
+        
+        # Helper function to convert numpy types to Python native types
+        def convert_numpy_types(obj):
+            """Recursively convert numpy types to Python native types."""
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, dict):
+                return {k: convert_numpy_types(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_numpy_types(item) for item in obj]
+            else:
+                return obj
+        
+        # Convert numpy types to Python native types for JSON serialization
+        cluster_ids = [int(cid) for cid in similarity_results["cluster_ids"]]
+        similarity_matrix = convert_numpy_types(similarity_results["similarity_matrix"])
+        
+        similarity_output = {
+            "cluster_ids": cluster_ids,
+            "similarity_matrix": similarity_matrix,
+            "per_cluster_avg": {str(k): float(v) for k, v in similarity_results["per_cluster_avg"].items()},
+            "overall_avg": float(similarity_results["overall_avg"]),
+            "interpretation": "Lower avg similarity = more distinct clusters = potentially more polysemantic neuron",
+            "metadata": {
+                "experiment_name": config.experiment_name,
+                "model": config.model.model_name,
+                "layer": int(config.model.layer_ids[0]),
+                "n_clusters": int(len(similarity_results["cluster_ids"])),
+                "timestamp": datetime.now().isoformat(),
+            }
+        }
+        
+        results_dir = Path(config.output_dir) / "results"
+        results_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        similarity_filepath = results_dir / f"similarity_matrix_{config.experiment_name}_{timestamp}.json"
+        
+        with open(similarity_filepath, "w") as f:
+            json.dump(similarity_output, f, indent=2)
+        
+        logger.info(f"Saved similarity matrix to: {similarity_filepath}")
 
         logger.info("")
         logger.info("=" * 80)
@@ -353,4 +536,7 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+
 

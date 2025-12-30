@@ -1,17 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=prism-bio-test
-#SBATCH --account=gts-crozell3-paid
-#SBATCH --partition=gpu
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
-#SBATCH --gres=gpu:V100:1
-#SBATCH --time=1:00:00
+#SBATCH -t 1:00:00
+#SBATCH --mem-per-gpu=16G
+#SBATCH -n 1
+#SBATCH -N 1
+#SBATCH --gres=gpu:1
+#SBATCH -C "A100-40GB|A100-80GB|H100|V100-16GB|V100-32GB|RTX6000|A40|L40S"
 #SBATCH --output=slurm-results/slurm-test-%j.out
 #SBATCH --error=slurm-results/slurm-test-%j.err
-#SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=your_email@gatech.edu
 
 # ============================================================================
 # PRISM-Bio Quick Test SLURM Job
@@ -70,4 +66,7 @@ echo "End time: $(date)"
 echo "=============================================="
 
 exit ${EXIT_CODE}
+
+
+
 

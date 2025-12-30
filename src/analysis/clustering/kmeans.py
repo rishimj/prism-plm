@@ -124,3 +124,8 @@ class KMeansClusterer:
         logger.debug(f"Predicting labels for {embeddings.shape[0]} samples")
         return self.model.predict(embeddings)
 
+
+
+
+
+

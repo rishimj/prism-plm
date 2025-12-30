@@ -185,3 +185,8 @@ def format_duration(seconds: float) -> str:
         hours = seconds / 3600
         return f"{hours:.1f}h"
 
+
+
+
+
+

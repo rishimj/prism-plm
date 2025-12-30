@@ -6,6 +6,7 @@ logs/
 activations/
 visualizations/
 slurm-results/
+outputs/
 
 # Python
 __pycache__/
@@ -28,6 +29,29 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.pyc
+*.pyo
+*.pyd
+*.manifest
+*.spec
+
+# Cache directories
+.cache/
+*.cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.hypothesis/
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hf_cache/
+.pip-cache/
 
 # Virtual environments
 env/
@@ -39,18 +63,136 @@ venv/
 .vscode/
 *.swp
 *.swo
+*.sublime-*
 
 # Testing
+htmlcov/
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
 .nox/
 
 # Jupyter
 .ipynb_checkpoints/
+*.ipynb_checkpoints
 
 # OS
 .DS_Store
 Thumbs.db
+*~
+.directory
+.Trash-*
 
+# Data files and model checkpoints
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+*.pb
+*.tflite
+*.weights
+*.model
+checkpoints/
+models/checkpoints/
+wandb/
+mlruns/
+.neptune/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.out
+*.err
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+
+# Large data files (compressed)
+*.csv.gz
+*.tsv.gz
+*.parquet
+*.feather
+*.arrow
+*.db
+*.sqlite
+*.sqlite3
+*.json.gz
+
+# Large data files (uncompressed - typically in output directories)
+# Note: Output directories are already ignored above, but these patterns
+# provide extra safety for large files that might be created elsewhere
+*.csv
+*.tsv
+*.json
+*.jsonl
+
+# Large sequence/text files
+*.txt
+*.text
+*.fasta
+*.fa
+*.fastq
+*.fq
+*.fasta.gz
+*.fa.gz
+*.fastq.gz
+*.fq.gz
+
+# Large image/visualization files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.pdf
+*.svg
+*.eps
+
+# Large video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# Large audio files
+*.mp3
+*.wav
+*.flac
+*.ogg
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.bz2
+*.xz
+
+# Large binary/data files
+*.dat
+*.data
+*.raw
+*.bin
+
+# SLURM output files
+slurm-*.out
+slurm-*.err
+*.slurm

@@ -98,3 +98,8 @@ class UMAPReducer:
             raise ValueError("Model not fitted. Call fit_transform first.")
         return self.model.transform(embeddings)
 
+
+
+
+
+

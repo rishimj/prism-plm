@@ -1,17 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=prism-bio-feat-desc
-#SBATCH --account=gts-crozell3-paid
-#SBATCH --partition=gpu
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
-#SBATCH --gres=gpu:A100:1
-#SBATCH --time=24:00:00
+#SBATCH -t 4:00:00
+#SBATCH --mem-per-gpu=16G
+#SBATCH -n 1
+#SBATCH -N 1
+#SBATCH --gres=gpu:1
+#SBATCH -C "A100-40GB|A100-80GB|H100|V100-16GB|V100-32GB|RTX6000|A40|L40S"
 #SBATCH --output=slurm-results/slurm-feat-desc-%j.out
 #SBATCH --error=slurm-results/slurm-feat-desc-%j.err
-#SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --mail-user=your_email@gatech.edu
 
 # ============================================================================
 # PRISM-Bio Feature Description SLURM Job
@@ -54,6 +50,9 @@ mkdir -p visualizations
 # Source environment setup
 source slurm/setup_env.sh
 
+# Set PyTorch memory allocation config to reduce fragmentation
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
 # Get config file from argument or environment
 CONFIG_FILE="${1:-${PRISM_BIO_CONFIG:-configs/default.yaml}}"
 echo "Using config: ${CONFIG_FILE}"
@@ -85,4 +84,7 @@ echo "End time: $(date)"
 echo "=============================================="
 
 exit ${EXIT_CODE}
+
+
+
 

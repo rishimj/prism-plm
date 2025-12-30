@@ -302,14 +302,14 @@ def save_representative_sequences(
             "%Y-%m-%d_%H-%M-%S"
         )
 
-    filename = f"representative_sequences_{experiment_name}_{timestamp}.txt"
+    filename = f"all_sequences_{experiment_name}_{timestamp}.txt"
     filepath = output_dir / filename
 
-    logger.info(f"Saving representative sequences to: {filepath}")
+    logger.info(f"Saving all sequences to: {filepath}")
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write("=" * 80 + "\n")
-        f.write(f"REPRESENTATIVE SEQUENCES - {experiment_name}\n")
+        f.write(f"ALL SEQUENCES BY CLUSTER - {experiment_name}\n")
         f.write(f"Generated: {timestamp}\n")
         f.write("=" * 80 + "\n\n")
 
@@ -318,12 +318,11 @@ def save_representative_sequences(
             f.write(f"CLUSTER {cluster_id} ({len(seqs)} sequences)\n")
             f.write("-" * 80 + "\n")
 
-            for i, seq_dict in enumerate(seqs[:10], 1):  # Max 10 per cluster
+            # Write ALL sequences (not just first 10)
+            for i, seq_dict in enumerate(seqs, 1):
                 seq_id = seq_dict.get("id", f"seq_{i}")
                 sequence = seq_dict.get("sequence", "")
-                # Truncate long sequences
-                if len(sequence) > 100:
-                    sequence = sequence[:50] + "..." + sequence[-50:]
+                # Don't truncate - show full sequences
                 f.write(f"  {i}. {seq_id}: {sequence}\n")
 
             f.write("\n")
@@ -381,4 +380,9 @@ def save_go_enrichment_results(
 
     logger.info(f"Saved {len(enrichment_results)} GO enrichment results to {filepath}")
     return filepath
+
+
+
+
+
 

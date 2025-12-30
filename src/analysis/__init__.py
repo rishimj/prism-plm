@@ -6,6 +6,14 @@ from src.analysis.clustering import (
     KMeansClusterer,
     HDBSCANClusterer,
 )
+from src.analysis.go_enrichment import (
+    extract_go_annotations_swissprot,
+    load_go_annotations_uniprot,
+    perform_go_enrichment,
+    get_top_go_terms,
+    download_go_ontology,
+    run_cluster_go_enrichment,
+)
 
 __all__ = [
     "cluster_embeddings",
@@ -13,5 +21,16 @@ __all__ = [
     "get_representative_samples",
     "KMeansClusterer",
     "HDBSCANClusterer",
+    "extract_go_annotations_swissprot",
+    "load_go_annotations_uniprot",
+    "perform_go_enrichment",
+    "get_top_go_terms",
+    "download_go_ontology",
+    "run_cluster_go_enrichment",
 ]
+
+
+
+
+
 

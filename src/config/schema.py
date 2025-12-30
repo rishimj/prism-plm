@@ -17,14 +17,14 @@ class DatasetConfig(BaseModel):
     source: Literal["huggingface", "fasta", "csv", "custom"] = "huggingface"
 
     # HuggingFace options
-    hf_dataset_name: Optional[str] = "PolyAI/uniref50"
+    hf_dataset_name: Optional[str] = "lhallee/SwissProt"
     hf_subset: Optional[str] = None
     hf_split: str = "train"
 
     # File options (for fasta/csv)
     file_path: Optional[str] = None
-    sequence_column: str = "sequence"
-    id_column: str = "id"
+    sequence_column: str = "Sequence"  # Default for SwissProt (capital S)
+    id_column: str = "Entry"  # Default for SwissProt
 
     # Processing options
     streaming: bool = True
@@ -311,4 +311,9 @@ class Config(BaseModel):
     def to_dict(self) -> Dict[str, Any]:
         """Convert config to dictionary."""
         return self.model_dump()
+
+
+
+
+
 

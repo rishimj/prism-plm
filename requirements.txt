@@ -14,6 +14,9 @@ pyyaml>=6.0.0
 biopython>=1.83
 goatools>=1.4.0
 
+# HTTP requests (for GO ontology download)
+requests>=2.31.0
+
 # Machine learning / Analysis
 scikit-learn>=1.4.0
 numpy>=1.24.0
@@ -37,4 +40,9 @@ pytest-mock>=3.12.0
 # Development
 black>=24.0.0
 ruff>=0.1.0
+
+
+
+
+
 

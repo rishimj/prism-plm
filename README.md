@@ -15,12 +15,17 @@ PRISM-Bio adapts the PRISM framework for mechanistic interpretability of protein
 ## Quick Start
 
 ```bash
-# 1. Create conda environment
-conda create -n prism-bio python=3.11
-conda activate prism-bio
+# 1. Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 2. Install dependencies
-pip install -r requirements.txt
+# 2. Create virtual environment and install dependencies
+# Option A: Using pyproject.toml (recommended)
+uv sync
+
+# Option B: Using requirements.txt
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
 
 # 3. Run quick test locally
 python scripts/run_feature_description.py --config configs/experiments/quick_test.yaml
@@ -149,4 +154,7 @@ Outputs match the PRISM format:
 ## License
 
 MIT License
+
+
+
 

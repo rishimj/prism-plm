@@ -234,3 +234,8 @@ class TestLogSystemInfo:
 
         assert "Platform" in caplog.text
 
+
+
+
+
+

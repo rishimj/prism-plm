@@ -10,11 +10,15 @@ num_workers: 4
 use_gpu: true
 
 # Dataset Configuration
+# Note: PolyAI/uniref50 doesn't exist on HuggingFace Hub
+# Using SwissProt as alternative (manually curated protein sequences)
 dataset:
   source: "huggingface"
-  hf_dataset_name: "PolyAI/uniref50"
+  hf_dataset_name: "lhallee/SwissProt"
   hf_subset: null
   hf_split: "train"
+  sequence_column: "Sequence"  # Note: capital S in SwissProt dataset
+  id_column: "Entry"  # Use Entry column for ID
   streaming: true
   max_samples: 1000
   min_sequence_length: 50
@@ -30,9 +34,9 @@ model:
   hook_type: "all"
   layer_ids: [18]
   unit_ids: null  # null = all units
-  batch_size: 8
+  batch_size: 2  # Reduced for 3B model on 16GB GPUs
   device: "cuda"
-  dtype: "float16"
+  dtype: "float32"  # Use float32 to avoid overflow issues with float16
   aggregation: "mean"
 
 # Clustering Configuration
@@ -99,4 +103,7 @@ text_generation:
   top_p: 0.95
   do_sample: true
   system_instruction: "assistant"
+
+
+
 

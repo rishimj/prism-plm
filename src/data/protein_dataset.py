@@ -86,6 +86,10 @@ def get_uniref50(
     **kwargs,
 ) -> Iterator[Dict[str, Any]]:
     """Convenience function to load UniRef50 dataset.
+    
+    Note: The original 'PolyAI/uniref50' dataset doesn't exist on HuggingFace Hub.
+    This function now uses 'lhallee/SwissProt' as an alternative protein dataset.
+    To use a different dataset, use HuggingFaceProteinLoader directly.
 
     Args:
         streaming: Whether to stream (memory efficient)
@@ -96,11 +100,14 @@ def get_uniref50(
     Returns:
         Iterator of sequence dictionaries
     """
+    # Use SwissProt as alternative since PolyAI/uniref50 doesn't exist
     loader = HuggingFaceProteinLoader(
-        hf_dataset_name="PolyAI/uniref50",
+        hf_dataset_name="lhallee/SwissProt",
         hf_split=split,
         streaming=streaming,
         max_samples=max_samples,
+        sequence_column="Sequence",  # Note: capital S in SwissProt dataset
+        id_column="Entry",  # Use Entry column for ID
         **kwargs,
     )
     return loader.load()
@@ -166,6 +173,10 @@ class HuggingFaceProteinLoader:
             Iterator of sequence dictionaries with 'id' and 'sequence' keys
         """
         from datasets import load_dataset
+        from src.utils.helpers import get_huggingface_token
+
+        # Get token if available (for gated/private datasets)
+        token = get_huggingface_token()
 
         with LogContext(
             logger,
@@ -177,13 +188,14 @@ class HuggingFaceProteinLoader:
             logger.debug(f"  path={self.dataset_name}")
             logger.debug(f"  name={self.subset}")
             logger.debug(f"  split={self.split}")
+            logger.debug(f"  token={'set' if token else 'not set (using public access)'}")
 
             dataset = load_dataset(
                 path=self.dataset_name,
                 name=self.subset,
                 split=self.split,
                 streaming=self.streaming,
-                trust_remote_code=True,
+                token=token,  # Pass token explicitly (None is fine for public datasets)
             )
 
             logger.info(f"Dataset loaded successfully")

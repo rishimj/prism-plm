@@ -5,6 +5,9 @@ dataset:
   source: "huggingface"
   hf_dataset_name: "lhallee/SwissProt"
   hf_split: "train"
-  sequence_column: "sequence"
-  id_column: "accession"
+  sequence_column: "Sequence"  # Note: capital S in SwissProt dataset
+  id_column: "Entry"  # Use Entry column for ID
+
+
+
 

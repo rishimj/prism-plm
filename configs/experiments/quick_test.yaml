@@ -6,6 +6,11 @@ experiment_name: "quick_test"
 verbose: true
 
 dataset:
+  source: "huggingface"
+  hf_dataset_name: "lhallee/SwissProt"
+  hf_split: "train"
+  sequence_column: "Sequence"  # Note: capital S in SwissProt dataset
+  id_column: "Entry"  # Use Entry instead of accession
   max_samples: 100
   min_sequence_length: 20
   streaming: true
@@ -32,4 +37,7 @@ sampling:
 
 go_enrichment:
   enabled: false  # Disable for quick tests
+
+
+
 
