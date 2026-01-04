@@ -1,0 +1,78 @@
+# Default Activation Steering Configuration
+# This file contains default settings for activation steering experiments
+
+# Experiment metadata
+experiment_name: "steering_experiment"
+output_dir: "outputs/steering"
+log_level: "INFO"
+verbose: true
+random_seed: 42
+
+# Model Configuration
+model:
+  model_name: "facebook/esm2_t6_8M_UR50D"
+  device: "cuda"
+  dtype: "float32"
+
+# Steering Configuration
+steering:
+  # Layer to inject steering vector
+  layer_id: 3  # Middle layer for 8M model (6 layers total)
+  
+  # Multipliers to test (0.0 = baseline/no steering)
+  multipliers: [0.0, 0.5, 1.0, 2.0, 5.0]
+  
+  # Number of samples for vector derivation
+  n_positive_samples: 100
+  n_negative_samples: 100
+  
+  # How to aggregate activations over sequence positions
+  aggregation: "mean"  # Options: "mean", "first", "max"
+
+# Vector Derivation Modes
+vector_derivation:
+  # Mode options: "motif", "go_cluster", "id_lists"
+  mode: "motif"
+  
+  # Motif mode settings
+  motif:
+    # Common protein motifs:
+    # - Zinc finger: "C.{2,4}C.{3}[LIVMFYWC].{8}H.{3,5}H"
+    # - Nuclear localization signal: "K[RK]X{10,12}K[KR]{3,5}"
+    # - ATP binding: "G.{4}GK[ST]"
+    pattern: "C.{2,4}C"  # Simple cysteine pair motif
+  
+  # GO cluster mode settings
+  go_cluster:
+    prism_results: null  # Path to PRISM results JSON
+    cluster_id: 0        # Cluster ID to use as positive set
+  
+  # ID list mode settings
+  id_lists:
+    positive_ids: null   # Path to positive protein IDs file
+    negative_ids: null   # Path to negative protein IDs file
+
+# Dataset Configuration (for sequence loading)
+dataset:
+  source: "huggingface"
+  hf_dataset_name: "lhallee/SwissProt"
+  hf_split: "train"
+  streaming: true
+  max_samples: 5000
+  max_sequence_length: 1024
+
+# Target sequence settings
+target:
+  # Provide either a sequence directly or an ID to look up
+  sequence: null  # Direct protein sequence
+  id: null        # Protein ID to look up in dataset
+  # If both null, a random sequence from the dataset is used
+
+# Output Configuration
+output:
+  save_hidden_states: true
+  save_logits: true
+  save_steering_vector: true
+  visualize: true
+  save_formats: ["png", "json"]
+
