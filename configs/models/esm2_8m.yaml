@@ -1,6 +1,9 @@
 # ESM-2 8M Configuration
 # Smallest ESM-2 model - good for testing and quick experiments
 
+dataset:
+  max_samples: 1000  # Limit to 1000 samples for faster processing
+
 model:
   model_type: "esm2"
   model_name: "facebook/esm2_t6_8M_UR50D"

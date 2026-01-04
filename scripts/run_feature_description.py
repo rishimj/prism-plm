@@ -237,6 +237,15 @@ def main():
         )
 
         # Extract embeddings
+        # Process only the first layer to avoid metadata/embedding mismatch
+        # If multiple layers are specified, we'll use the first one
+        primary_layer_id = config.model.layer_ids[0]
+        if len(config.model.layer_ids) > 1:
+            logger.warning(
+                f"Multiple layers specified ({config.model.layer_ids}). "
+                f"Using only the first layer ({primary_layer_id}) for clustering to avoid metadata mismatch."
+            )
+        
         all_embeddings = []
         all_metadata = []
 
@@ -253,25 +262,24 @@ def main():
                     output_hidden_states=True,
                 )
 
-                # Get embeddings from specified layer
-                for layer_id in config.model.layer_ids:
-                    hidden_states = outputs.hidden_states[layer_id]
+                # Get embeddings from primary layer only
+                hidden_states = outputs.hidden_states[primary_layer_id]
 
-                    # Aggregate over sequence
-                    if config.model.aggregation == "mean":
-                        # Mean pool over non-padding tokens
-                        mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size())
-                        sum_embeddings = torch.sum(hidden_states * mask_expanded, dim=1)
-                        sum_mask = mask_expanded.sum(dim=1).clamp(min=1e-9)
-                        embeddings = sum_embeddings / sum_mask
-                    elif config.model.aggregation == "first":
-                        embeddings = hidden_states[:, 0]  # CLS token
-                    else:
-                        embeddings = hidden_states.mean(dim=1)
+                # Aggregate over sequence
+                if config.model.aggregation == "mean":
+                    # Mean pool over non-padding tokens
+                    mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size())
+                    sum_embeddings = torch.sum(hidden_states * mask_expanded, dim=1)
+                    sum_mask = mask_expanded.sum(dim=1).clamp(min=1e-9)
+                    embeddings = sum_embeddings / sum_mask
+                elif config.model.aggregation == "first":
+                    embeddings = hidden_states[:, 0]  # CLS token
+                else:
+                    embeddings = hidden_states.mean(dim=1)
 
-                    all_embeddings.append(embeddings.cpu().numpy())
+                all_embeddings.append(embeddings.cpu().numpy())
 
-                # Store metadata with sequence info
+                # Store metadata with sequence info (once per batch, matching embeddings)
                 for i, seq_id in enumerate(batch["sequence_id"]):
                     # Find the original sequence data
                     seq_data = next((s for s in sequences if s.get("id") == seq_id), None)
@@ -300,6 +308,14 @@ def main():
         
         all_embeddings = np.vstack(all_embeddings)
         logger.info(f"Extracted embeddings: {all_embeddings.shape}")
+        
+        # Verify metadata and embeddings are aligned
+        if len(all_metadata) != len(all_embeddings):
+            raise ValueError(
+                f"Metadata/embeddings mismatch: {len(all_metadata)} metadata items "
+                f"but {len(all_embeddings)} embeddings. This can happen if multiple "
+                f"layers are processed. Using only the first layer: {primary_layer_id}"
+            )
 
         # Check for and handle inf/nan values in embeddings
         if np.any(~np.isfinite(all_embeddings)):
