@@ -1,0 +1,53 @@
+name: Deploy demo site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "demo/web/**"
+      - ".github/workflows/deploy-demo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: demo/web/package-lock.json
+      - run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          # Set a repository variable DEMO_API_URL (e.g. https://prism-bio.eastus.cloudapp.azure.com)
+          # to enable live mode. Without it the site runs on precomputed data.
+          VITE_API_BASE: ${{ vars.DEMO_API_URL }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -4,6 +4,14 @@
 
 PRISM-Bio adapts the PRISM framework for mechanistic interpretability of protein language models (ESM-2, ProtTrans, etc.).
 
+## Interactive demo
+
+**[rishimj.github.io/prism-plm](https://rishimj.github.io/prism-plm/)**: explore neurons on AlphaFold structures of
+famous proteins, browse an atlas of all 5,760 neurons in ESM-2 35M, see structure emerge layer by layer, compare
+model sizes, and steer the model toward biological motifs. Everything shown is generated from real runs of this
+repository's code; see [`demo/`](demo/README.md) for how it is built and deployed (GitHub Pages + an optional
+FastAPI service on Azure).
+
 ## Features
 
 - **Configurable**: Everything is configurable via YAML files and environment variables

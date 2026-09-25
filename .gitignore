@@ -196,3 +196,13 @@ mlruns/
 slurm-*.out
 slurm-*.err
 *.slurm
+
+# Demo: pipeline cache and web build
+demo/.cache/
+demo/web/node_modules/
+demo/web/dist/
+# Demo: ship generated site data, API assets and web config despite the data rules above
+!demo/web/public/data/**/*.json
+!demo/web/*.json
+!demo/backend/assets/*.json
+!demo/backend/assets/*.npz

@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PRISM-Bio · Inside a Protein Language Model</title>
+    <meta
+      name="description"
+      content="PRISM-Bio opens up ESM-2, a protein language model: it finds neurons that track biology, measures how many concepts each neuron mixes, and steers the model toward biological motifs."
+    />
+    <meta property="og:title" content="PRISM-Bio · Inside a Protein Language Model" />
+    <meta
+      property="og:description"
+      content="Interactive mechanistic interpretability for ESM-2: neuron atlas, structure probing, scaling study and activation steering."
+    />
+    <meta name="theme-color" content="#07130f" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;550;600;650;700;750&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap">
+        <a class="brand" href="#top" aria-label="PRISM-Bio home">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="#07130f" />
+            <path d="M9 6c8 4 8 8 0 10s-8 6 0 10" stroke="#6fe0bb" stroke-width="2.4" fill="none" stroke-linecap="round" />
+            <path d="M23 6c-8 4-8 8 0 10s8 6 0 10" stroke="#9ad7ff" stroke-width="2.4" fill="none" stroke-linecap="round" />
+            <circle cx="16" cy="11" r="1.8" fill="#ffe38a" />
+            <circle cx="16" cy="21" r="1.8" fill="#ffe38a" />
+          </svg>
+          PRISM-Bio
+        </a>
+        <nav class="nav-links" aria-label="Sections">
+          <a href="#how">How it works</a>
+          <a href="#explorer">Explorer</a>
+          <a href="#probing">Structure</a>
+          <a href="#atlas">Neuron atlas</a>
+          <a href="#scaling">Scaling</a>
+          <a href="#steering">Steering</a>
+          <a href="#engineering">Engineering</a>
+        </nav>
+        <div class="nav-right">
+          <span class="status-pill" id="api-status" title="Checking live model…">
+            <span class="dot"></span><span class="txt">Connecting…</span>
+          </span>
+          <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+          </button>
+          <a class="btn small" href="https://github.com/rishimj/prism-plm" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 23.5 12C23.5 5.7 18.3.5 12 .5z"/></svg>
+            Code
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section class="hero" id="top">
+        <div class="wrap">
+          <div>
+            <span class="eyebrow">Mechanistic interpretability · Protein language models</span>
+            <h1>What does a protein language model <em>actually know?</em></h1>
+            <p class="lede">
+              ESM-2 learned the grammar of life from 65 million protein sequences, with no textbook and no
+              structures. PRISM-Bio opens it up: it finds the neurons that track real biology, measures how many
+              concepts each neuron mixes, and steers the model toward the motifs it discovered.
+            </p>
+            <div class="hero-cta">
+              <a class="btn primary" href="#explorer">Explore a protein</a>
+              <a class="btn" href="#how">How it works</a>
+            </div>
+            <div class="hero-stats" id="hero-stats"></div>
+          </div>
+          <div class="hero-visual">
+            <canvas id="hero-canvas" aria-label="Rotating backbone of the KRAS protein coloured by one neuron's activation"></canvas>
+            <div class="hero-caption" id="hero-caption"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="block" id="how">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div>
+              <span class="eyebrow"><span class="kicker-num">01</span> How it works</span>
+              <h2>Reading the mind of a model that reads proteins</h2>
+            </div>
+            <p>
+              A protein is a string of 20 amino-acid letters that folds into a molecular machine. Language models
+              trained on these strings develop internal "neurons". PRISM-Bio asks what each neuron responds to, and
+              whether we can use that knowledge to control the model.
+            </p>
+          </div>
+          <div class="steps">
+            <div class="card step reveal">
+              <div class="num">1</div>
+              <h3>Read thousands of proteins</h3>
+              <p>Stream curated SwissProt proteins through ESM-2 and record every neuron's activity at every layer.</p>
+              <div class="code">src/data/protein_dataset.py</div>
+            </div>
+            <div class="card step reveal">
+              <div class="num">2</div>
+              <h3>Find what excites a neuron</h3>
+              <p>Take each neuron's top-100 proteins, cluster them, and score polysemanticity: does it fire for one concept or many?</p>
+              <div class="code">scripts/run_single_neuron.py</div>
+            </div>
+            <div class="card step reveal">
+              <div class="num">3</div>
+              <h3>Name it with biology</h3>
+              <p>Test those proteins for over-represented Gene Ontology terms and protein families (hypergeometric, BH-FDR).</p>
+              <div class="code">src/analysis/go_enrichment.py</div>
+            </div>
+            <div class="card step reveal">
+              <div class="num">4</div>
+              <h3>Steer the model</h3>
+              <p>Turn a concept into a direction in activation space, inject it mid-network, and watch predictions change.</p>
+              <div class="code">src/steering · SteeringVector, SteeringHook</div>
+            </div>
+          </div>
+          <div class="plain-callout reveal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+            <div>
+              <b>Why it matters.</b> Protein language models now help design enzymes, antibodies and drugs. If we can
+              see which concepts they rely on, we can trust, debug and steer them, the same way interpretability
+              research is making text models safer. Every number on this page comes from real runs of the code in
+              this repository.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EXPLORER -->
+      <section class="block alt" id="explorer">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div>
+              <span class="eyebrow"><span class="kicker-num">02</span> Protein explorer</span>
+              <h2>Watch individual neurons light up on famous proteins</h2>
+            </div>
+            <p>
+              Pick a protein, then a neuron. Its activity is painted onto the AlphaFold structure and the sequence
+              below, next to what biologists have annotated experimentally. Many neurons turn out to be precise
+              detectors for binding sites, helices or membrane segments.
+            </p>
+          </div>
+          <div class="chips" id="protein-chips" role="tablist" aria-label="Choose a protein"></div>
+          <div class="explorer-grid">
+            <div class="card viewer-card">
+              <div class="viewer-toolbar">
+                <div class="seg" id="color-mode" role="group" aria-label="Colour structure by">
+                  <button data-mode="neuron" class="active">Neuron activity</button>
+                  <button data-mode="plddt">AlphaFold confidence</button>
+                  <button data-mode="surprise">Model surprise</button>
+                </div>
+              </div>
+              <div class="viewer" id="viewer"></div>
+              <div class="viewer-foot">
+                <div class="gradient-legend" id="viewer-legend"></div>
+                <span id="viewer-hint">Drag to rotate · scroll to zoom · hover residues below</span>
+              </div>
+            </div>
+            <div class="card card-pad" id="protein-panel"></div>
+          </div>
+          <div class="card seq-card">
+            <div class="seq-head">
+              <div>
+                <h3 style="font-size: 16px">Residue by residue</h3>
+                <div class="sub">Neuron activity against experimental annotations, the model's own structure predictions, and how surprised it is by each residue.</div>
+              </div>
+              <div class="legend" id="seq-legend"></div>
+            </div>
+            <div class="seq-scroll" id="seq-view"></div>
+          </div>
+          <div class="card card-pad" style="margin-top: 18px">
+            <h3>Neuron fingerprint</h3>
+            <div class="sub">
+              Neurons this protein drives furthest above the 3,000-protein background, with the label the atlas
+              assigned them. Click one to open it in the atlas.
+            </div>
+            <div class="fingerprint" id="fingerprint"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROBING -->
+      <section class="block" id="probing">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div>
+              <span class="eyebrow"><span class="kicker-num">03</span> Emergent structure</span>
+              <h2>It never saw a 3D structure. It learned one anyway.</h2>
+            </div>
+            <p>
+              For every layer we ask: can a simple linear read-out recover alpha-helices, beta-strands and
+              membrane-spanning segments from the model's activations? Scores are measured on proteins held out
+              from training, against experimentally determined annotations.
+            </p>
+          </div>
+          <div class="legend" id="probing-legend"></div>
+          <div class="multiples" id="probing-charts"></div>
+          <div class="insight-row" id="probing-insights"></div>
+          <p class="footnote" id="probing-note"></p>
+        </div>
+      </section>
+
+      <!-- ATLAS -->
+      <section class="block alt" id="atlas">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div>
+              <span class="eyebrow"><span class="kicker-num">04</span> Neuron atlas</span>
+              <h2>Every neuron in ESM-2 35M, described in biology</h2>
+            </div>
+            <p id="atlas-intro">
+              5,760 neurons (12 layers × 480) profiled on 3,000 proteins. Each dot is a neuron: further right means it
+              mixes more distinct protein groups (polysemantic); higher means its top proteins share a sharper
+              biological label. Search for a concept or click any dot.
+            </p>
+          </div>
+          <div class="atlas-controls">
+            <div class="seg" id="layer-select" role="group" aria-label="Layer"></div>
+            <div class="search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+              <input id="atlas-search" type="search" placeholder="Search concepts: heme, kinase, ribosome, zinc…" autocomplete="off" />
+              <div class="card search-results" id="search-results"></div>
+            </div>
+          </div>
+          <div class="atlas-grid">
+            <div class="card card-pad">
+              <h3 id="scatter-title">Layer 6</h3>
+              <div class="sub" id="scatter-sub"></div>
+              <div class="chart" id="atlas-scatter"></div>
+              <div class="sub-h">Most specific neurons in this layer</div>
+              <div class="top-list" id="layer-top"></div>
+            </div>
+            <div class="card card-pad neuron-card" id="neuron-card"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCALING -->
+      <section class="block" id="scaling">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div>
+              <span class="eyebrow"><span class="kicker-num">05</span> Scaling study</span>
+              <h2>Do bigger models have cleaner neurons?</h2>
+            </div>
+            <p>
+              The same 1,000 proteins run through four ESM-2 sizes, from 8 million to 650 million parameters. For
+              128 sampled neurons per layer we measure polysemanticity and whether the neuron earns a significant
+              biological label.
+            </p>
+          </div>
+          <div class="two-col">
+            <div class="card card-pad">
+              <h3>Polysemanticity across depth</h3>
+              <div class="sub">Median score of sampled neurons at each layer, by relative depth in the network.</div>
+              <div class="legend" id="scaling-legend" style="margin-top: 12px"></div>
+              <div class="chart" id="scaling-depth"></div>
+            </div>
+            <div class="card card-pad">
+              <h3>Neurons with a significant biological label</h3>
+              <div class="sub">Share of sampled neurons whose top-100 proteins are enriched for a GO term or family (FDR &lt; 0.05).</div>
+              <div class="chart" id="scaling-sig"></div>
+            </div>
+          </div>
+          <div class="finding" id="scaling-finding"></div>
+        </div>
+      </section>
+
+      <!-- STEERING -->
+      <section class="block alt" id="steering">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div>
+              <span class="eyebrow"><span class="kicker-num">06</span> Activation steering</span>
+              <h2>Turn a concept into a dial</h2>
+            </div>
+            <p>
+              A concept vector is the average activation of proteins that have a property minus those that do not.
+              Adding it into layer 6 of ESM-2 pushes the model's reading of a protein toward that concept. Drag the
+              slider and watch what the model now "wants" each residue to be.
+            </p>
+          </div>
+          <div class="steer-controls">
+            <div class="card card-pad">
+              <h3>1 · Choose a concept</h3>
+              <div class="concept-grid" id="concept-grid"></div>
+            </div>
+            <div class="card card-pad">
+              <h3>2 · Choose a protein and a strength</h3>
+              <div class="seg" id="target-select" style="margin-top: 10px"></div>
+              <div class="slider-row">
+                <button class="icon-btn" id="steer-play" aria-label="Animate strength">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                </button>
+                <input type="range" id="steer-slider" min="0" max="11" step="1" value="2" aria-label="Steering strength" />
+                <span class="strength-read" id="strength-read"></span>
+              </div>
+              <div class="sub" id="steer-scale-note" style="margin-top: 6px"></div>
+            </div>
+          </div>
+          <div class="stat-tiles" id="steer-tiles"></div>
+          <div class="card card-pad">
+            <h3>What the model predicts at each position</h3>
+            <div class="sub">
+              Top row: the real protein. Middle: ESM-2's most likely residue at each position after steering
+              (changed residues in red; motif matches underlined). Bottom: per-residue pull toward the concept's
+              amino-acid signature.
+            </div>
+            <div class="seq-compare" id="steer-seq" style="margin-top: 14px"></div>
+          </div>
+          <div class="steer-charts">
+            <div class="card card-pad">
+              <h3>Concept signature</h3>
+              <div class="sub">Mean log-odds of the concept's amino acids across the protein.</div>
+              <div class="chart" id="steer-concept-chart"></div>
+            </div>
+            <div class="card card-pad">
+              <h3>Identity kept</h3>
+              <div class="sub">Share of positions where the prediction is still the native residue.</div>
+              <div class="chart" id="steer-identity-chart"></div>
+            </div>
+            <div class="card card-pad">
+              <h3>Where the change propagates</h3>
+              <div class="sub">Cosine similarity to the unsteered representation, per layer.</div>
+              <div class="chart" id="steer-drift-chart"></div>
+            </div>
+          </div>
+          <div class="card card-pad" id="steer-live" style="margin-top: 18px"></div>
+        </div>
+      </section>
+
+      <!-- ENGINEERING -->
+      <section class="block" id="engineering">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div>
+              <span class="eyebrow"><span class="kicker-num">07</span> Engineering</span>
+              <h2>From GPU cluster to your browser</h2>
+            </div>
+            <p>
+              Heavy analyses run as batch jobs; their results ship as static data with this site. A small FastAPI
+              service on Azure runs ESM-2 live so you can analyze and steer your own sequences.
+            </p>
+          </div>
+          <div class="arch">
+            <div class="card card-pad arch-diagram" id="arch-diagram"></div>
+            <div class="card card-pad tech-list" id="tech-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <div>
+          <b style="color: var(--ink)">PRISM-Bio</b> · Protein mechanistic interpretability with PRISM<br />
+          Built by <a href="https://github.com/rishimj" target="_blank" rel="noopener">@rishimj</a>. Models: ESM-2 (Meta AI).
+          Structures: AlphaFold DB. Annotations: UniProt / SwissProt.
+        </div>
+        <div>
+          <a href="https://github.com/rishimj/prism-plm" target="_blank" rel="noopener">Source on GitHub</a> ·
+          <a href="https://github.com/rishimj/prism-plm/tree/main/demo" target="_blank" rel="noopener">How this demo is built</a>
+        </div>
+      </div>
+    </footer>
+    <div class="tooltip" id="tooltip" role="tooltip"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
