@@ -1,0 +1,19 @@
+{$API_DOMAIN} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	@api path /api/*
+	handle @api {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		respond "PRISM-Bio API. See /api/health" 200
+	}
+}

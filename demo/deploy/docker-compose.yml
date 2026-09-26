@@ -1,0 +1,40 @@
+# PRISM-Bio live API: FastAPI + ESM-2 behind Caddy (automatic HTTPS via Let's Encrypt).
+# Run from demo/deploy with a .env file (see .env.example):
+#   docker compose up -d --build
+# The fixed project name keeps containers/volumes separate from other stacks on a shared VM.
+name: prism-bio
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: demo/backend/Dockerfile
+    image: prism-bio-api:latest
+    restart: unless-stopped
+    environment:
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-30}
+      TORCH_THREADS: ${TORCH_THREADS:-2}
+      MAX_SEQUENCE_LENGTH: ${MAX_SEQUENCE_LENGTH:-400}
+    expose:
+      - "8000"
+    mem_limit: 3g
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

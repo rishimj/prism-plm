@@ -164,6 +164,15 @@ def compare_logits(
     return results
 
 
+def _decode_residues(tokenizer, ids) -> str:
+    """Decode token IDs to a contiguous residue string.
+
+    ESM tokenizers decode to space-separated residues ("M K T"), which would
+    stop motif regexes such as "G.{4}GK[ST]" from ever matching.
+    """
+    return tokenizer.decode(ids, skip_special_tokens=True).replace(" ", "")
+
+
 def compute_concept_probability_shift(
     baseline_logits: torch.Tensor,
     steered_logits: torch.Tensor,
@@ -209,13 +218,17 @@ def compute_concept_probability_shift(
         if input_ids is None:
             raise ValueError("input_ids required for masked_token method")
         
-        # Decode input sequence
-        input_sequence = tokenizer.decode(input_ids[0], skip_special_tokens=True)
+        # Decode input sequence (ESM tokenizers join residues with spaces; strip them
+        # so motif regexes see the contiguous sequence)
+        input_sequence = _decode_residues(tokenizer, input_ids[0])
+        special_ids = set(tokenizer.all_special_ids)
+        residue_idx = -1
         
         for pos_idx in range(seq_len):
             # Skip special tokens
-            if input_ids[0, pos_idx].item() in tokenizer.all_special_ids:
+            if input_ids[0, pos_idx].item() in special_ids:
                 continue
+            residue_idx += 1  # index into input_sequence (token positions include <cls>)
             
             # Get probability distribution over vocabulary for this position
             baseline_pos_probs = baseline_probs[0, pos_idx, :]  # [vocab_size]
@@ -233,10 +246,10 @@ def compute_concept_probability_shift(
                         continue
                     
                     # Create test sequence with this token at position
-                    test_seq = input_sequence[:pos_idx] + token_str + input_sequence[pos_idx+1:]
+                    test_seq = input_sequence[:residue_idx] + token_str + input_sequence[residue_idx+1:]
                     
                     # Evaluate concept match
-                    concept_score = concept_evaluator(test_seq, pos_idx, token_str)
+                    concept_score = concept_evaluator(test_seq, residue_idx, token_str)
                     
                     # Weight by probability of this token
                     baseline_concept_prob += baseline_pos_probs[token_id].item() * concept_score
@@ -264,11 +277,14 @@ def compute_concept_probability_shift(
         if input_ids is None:
             raise ValueError("input_ids required for token_probability method")
         
-        input_sequence = tokenizer.decode(input_ids[0], skip_special_tokens=True)
+        input_sequence = _decode_residues(tokenizer, input_ids[0])
+        special_ids = set(tokenizer.all_special_ids)
+        residue_idx = -1
         
         for pos_idx in range(seq_len):
-            if input_ids[0, pos_idx].item() in tokenizer.all_special_ids:
+            if input_ids[0, pos_idx].item() in special_ids:
                 continue
+            residue_idx += 1
             
             # Check top-k predictions
             for k in range(top_k):
@@ -278,12 +294,12 @@ def compute_concept_probability_shift(
                 baseline_token_str = tokenizer.decode([baseline_token], skip_special_tokens=True)
                 steered_token_str = tokenizer.decode([steered_token], skip_special_tokens=True)
                 
-                test_seq_baseline = input_sequence[:pos_idx] + baseline_token_str + input_sequence[pos_idx+1:]
-                test_seq_steered = input_sequence[:pos_idx] + steered_token_str + input_sequence[pos_idx+1:]
+                test_seq_baseline = input_sequence[:residue_idx] + baseline_token_str + input_sequence[residue_idx+1:]
+                test_seq_steered = input_sequence[:residue_idx] + steered_token_str + input_sequence[residue_idx+1:]
                 
-                if concept_evaluator(test_seq_baseline, pos_idx, baseline_token_str):
+                if concept_evaluator(test_seq_baseline, residue_idx, baseline_token_str):
                     baseline_matches += 1
-                if concept_evaluator(test_seq_steered, pos_idx, steered_token_str):
+                if concept_evaluator(test_seq_steered, residue_idx, steered_token_str):
                     steered_matches += 1
                 
                 total += 1
@@ -300,8 +316,8 @@ def compute_concept_probability_shift(
             raise ValueError("input_ids required for sequence_level method")
         
         # Decode full sequences
-        baseline_seq = tokenizer.decode(baseline_preds[0], skip_special_tokens=True)
-        steered_seq = tokenizer.decode(steered_preds[0], skip_special_tokens=True)
+        baseline_seq = _decode_residues(tokenizer, baseline_preds[0])
+        steered_seq = _decode_residues(tokenizer, steered_preds[0])
         
         # Evaluate concept match (binary)
         baseline_concept_prob = 1.0 if concept_evaluator(baseline_seq, None, None) else 0.0

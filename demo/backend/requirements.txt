@@ -1,0 +1,7 @@
+# Live demo API. torch is installed separately from the CPU wheel index:
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.5
+transformers>=4.40.0
+numpy>=1.24

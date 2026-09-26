@@ -1,0 +1,7 @@
+# Use when the VM already runs a reverse proxy (nginx, Caddy, Traefik) on ports 80/443.
+# Starts only the API and publishes it on localhost:8000 for the existing proxy to forward to:
+#   docker compose -f docker-compose.yml -f docker-compose.behind-proxy.yml up -d --build api
+services:
+  api:
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
