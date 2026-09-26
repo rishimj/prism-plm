@@ -141,6 +141,8 @@ mlruns/
 
 # Large sequence/text files
 *.txt
+!requirements.txt
+!demo/**/requirements.txt
 *.text
 *.fasta
 *.fa
