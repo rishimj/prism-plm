@@ -39,6 +39,10 @@ npm run dev            # http://localhost:5173
 
 ## 2. Run the live API on your Azure B2s VM (optional)
 
+> Handing this to an AI agent in your terminal? Point it at
+> [`deploy/AZURE_DEPLOY_RUNBOOK.md`](deploy/AZURE_DEPLOY_RUNBOOK.md), a step-by-step runbook with
+> checks, safe handling of a VM shared with other projects, and a teardown section.
+
 The API needs about 1 GB of RAM and answers most requests in 1 to 5 seconds on 2 vCPUs.
 
 1. **Open ports**: in the Azure portal, VM → Networking → add inbound rules for TCP **80** and **443**.

@@ -1,6 +1,9 @@
 # PRISM-Bio live API: FastAPI + ESM-2 behind Caddy (automatic HTTPS via Let's Encrypt).
 # Run from demo/deploy with a .env file (see .env.example):
 #   docker compose up -d --build
+# The fixed project name keeps containers/volumes separate from other stacks on a shared VM.
+name: prism-bio
+
 services:
   api:
     build:
